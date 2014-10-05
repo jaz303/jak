@@ -76,12 +76,22 @@ Block
 
 _               = [ \t\r\n]*
 
-ident           = $( ident_start ident_rest* )
+ident           = !keyword id:$( ident_start ident_rest* ) { return id; }
 ident_start     = [a-zA-Z_]
 ident_rest      = ident_start / [0-9]
+
+keyword
+    = ASYNC
+    / DEF
+    / IF
+    / SPAWN
+    / WHILE
 
 //
 // Tokens
 
-ASYNC           = 'async'   !ident_rest
-DEF             = 'def'     !ident_rest
+ASYNC           = 'async'       !ident_rest
+DEF             = 'def'         !ident_rest
+IF              = 'if'          !ident_rest
+SPAWN           = 'spawn'       !ident_rest
+WHILE           = 'while'       !ident_rest

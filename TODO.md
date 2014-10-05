@@ -7,3 +7,6 @@
  - [ ] select
  - [ ] while loop
  - [ ] expressions: integers, booleans, add / subtract
+
+# Compiler
+
