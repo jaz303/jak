@@ -1,7 +1,15 @@
 def async foo(  a : int, b : int, c : int  ) : int {
-	
+	1 + 2 - 3 + 4;
 }
 
 def bar( count : int  ) : float {
+	spawn processInput(1 );
+	
+	while true {
+		print( true, false, true );
+	}
 
+	
+
+	return 20 ;
 }

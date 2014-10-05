@@ -9,6 +9,30 @@
             return item[ix];
         }));
     }
+
+    function makeBinaryOperator(head, rest) {
+        var result = head;
+        rest.forEach(function(i) {
+            if (i[0] === '||') {
+                result = mk('logical-or', {
+                    left    : result,
+                    right   : i[i2]
+                });
+            } else if (i[0] === '&&') {
+                result = mk('logical-and', {
+                    left    : result,
+                    right   : i[i2]
+                });
+            } else {
+                result = mk('binary-operator', {
+                    op      : i[0],
+                    left    : result,
+                    right   : i[2]
+                });
+            }
+        });
+        return result;
+    }
 }
 
 start
@@ -18,12 +42,19 @@ start
 // Production
 
 Program
-    = _ stmts:Statement* {
+    = _ stmts:TopLevelStatement* {
         return stmts;
     }
 
+TopLevelStatement
+    = FunctionDefinition
+
 Statement
     = FunctionDefinition
+    / ReturnStatement
+    / WhileStatement
+    / ExpressionStatement
+
 
 FunctionDefinition
     = DEF _ async:ASYNC? _ name:ident _ args:FunctionArgs? retType:TypeDecl body:Block {
@@ -54,6 +85,26 @@ FunctionArg
         });
     }
 
+ReturnStatement
+    = RETURN _ exp:Expression ';' _ {
+        return mk("return", {
+            exp: exp
+        });
+    }
+    / RETURN _ ';' _ {
+        return mk("return", {
+            exp: undefined
+        });
+    }
+
+WhileStatement
+    = WHILE _ exp:Expression _ body:Block {
+        return mk("while", {
+            condition: exp,
+            body: body
+        });
+    }
+
 TypeDecl
     = ':' _ id:TypeId {
         return mk("type-decl", {
@@ -71,6 +122,70 @@ Block
         return stmts;
     }
 
+ExpressionStatement
+    = exp:Expression ';' _ {
+        return exp;
+    }
+
+Expression
+    = AdditiveExpression
+
+AdditiveExpression
+    = head:Spawn tail:(AdditiveOp _ Spawn)* {
+        return makeBinaryOperator(head, tail);
+    }
+
+AdditiveOp
+    = '+' / '-'
+
+Spawn
+    = SPAWN _ fn:Atom _ '(' _ args:FunctionCallArgs? ')' _ {
+        return mk('spawn', {
+            fn: fn,
+            args: args || []
+        });
+    }
+    / FunctionCall
+
+FunctionCall
+    = fn:Atom _ '(' _ args:FunctionCallArgs? ')' _ {
+        return mk('function-call', {
+            fn: fn,
+            args: args || []
+        });
+    }
+    / atom:Atom _ {
+        return atom;
+    }
+
+FunctionCallArgs
+    = head:Expression _ tail:(',' _ Expression)* {
+        return list(head, tail, 2);
+    }
+
+Atom
+    = Integer
+    / Ident
+    / Boolean
+
+Integer
+    = val:integer {
+        return mk('integer', {
+            value: parseInt(val, 10)
+        });
+    }
+
+Ident
+    = sym:ident {
+        return mk('ident', {
+            name: sym
+        });
+    }
+
+Boolean
+    = TRUE      { return mk('boolean', {value: true}); }
+    / FALSE     { return mk('boolean', {value: false}); }
+
 //
 // Helpers
 
@@ -80,11 +195,17 @@ ident           = !keyword id:$( ident_start ident_rest* ) { return id; }
 ident_start     = [a-zA-Z_]
 ident_rest      = ident_start / [0-9]
 
+integer         = '0'
+                / $( [1-9] [0-9]* )
+
 keyword
     = ASYNC
     / DEF
+    / FALSE
     / IF
+    / RETURN
     / SPAWN
+    / TRUE
     / WHILE
 
 //
@@ -92,6 +213,9 @@ keyword
 
 ASYNC           = 'async'       !ident_rest
 DEF             = 'def'         !ident_rest
+FALSE           = 'false'       !ident_rest
 IF              = 'if'          !ident_rest
+RETURN          = 'return'      !ident_rest
 SPAWN           = 'spawn'       !ident_rest
+TRUE            = 'true'        !ident_rest
 WHILE           = 'while'       !ident_rest

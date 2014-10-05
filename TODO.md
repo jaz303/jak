@@ -1,12 +1,14 @@
 # Parser
 
- - [ ] function declarations
- - [ ] function calls
+ - [x] function declarations
+ - [x] function calls
  - [ ] make channel
- - [ ] spawn
+ - [x] spawn
  - [ ] select
- - [ ] while loop
- - [ ] expressions: integers, booleans, add / subtract
+ - [x] while loop
+ - [ ] add / subtract
+ - [x] expressions: integers, booleans
+ - [x] return
 
 # Compiler
 
