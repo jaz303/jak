@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/jaz303/jak/issues"
   },
-  "homepage": "https://github.com/jaz303/jak"
+  "homepage": "https://github.com/jaz303/jak",
+  "dependencies": {
+    "pegjs": "^0.8.0"
+  }
 }
