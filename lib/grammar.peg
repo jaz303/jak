@@ -1,87 +1,87 @@
 {
-	function mk(type, opts) {
-		opts.nodeType = type;
-		return opts;
-	}
+    function mk(type, opts) {
+        opts.nodeType = type;
+        return opts;
+    }
 
-	function list(head, tail, ix) {
-		return [head].concat(tail.map(function(item) {
-			return item[ix];
-		}));
-	}
+    function list(head, tail, ix) {
+        return [head].concat(tail.map(function(item) {
+            return item[ix];
+        }));
+    }
 }
 
 start
-	= Program
+    = Program
 
 //
 // Production
 
 Program
-	= _ stmts:Statement* {
-		return stmts;
-	}
+    = _ stmts:Statement* {
+        return stmts;
+    }
 
 Statement
-	= FunctionDefinition
+    = FunctionDefinition
 
 FunctionDefinition
-	= DEF _ async:ASYNC? _ name:ident _ args:FunctionArgs? retType:TypeDecl body:Block {
-		return mk("function-def", {
-			async 		: !!async,
-			name 		: name,
-			args 		: args || [],
-			returnType	: retType,
-			body 		: body
-		});
-	}
+    = DEF _ async:ASYNC? _ name:ident _ args:FunctionArgs? retType:TypeDecl body:Block {
+        return mk("function-def", {
+            async       : !!async,
+            name        : name,
+            args        : args || [],
+            returnType  : retType,
+            body        : body
+        });
+    }
 
 FunctionArgs
-	= '(' _ lst:FunctionArgList? ')' _ {
-		return lst || [];
-	}
+    = '(' _ lst:FunctionArgList? ')' _ {
+        return lst || [];
+    }
 
 FunctionArgList
-	= head:FunctionArg rest:(',' _ FunctionArg)* {
-		return list(head, rest, 2);
-	}
+    = head:FunctionArg rest:(',' _ FunctionArg)* {
+        return list(head, rest, 2);
+    }
 
 FunctionArg
-	= name:ident _ type:TypeDecl {
-		return mk("function-arg", {
-			name: name,
-			type: type
-		});
-	}
+    = name:ident _ type:TypeDecl {
+        return mk("function-arg", {
+            name: name,
+            type: type
+        });
+    }
 
 TypeDecl
-	= ':' _ id:TypeId {
-		return mk("type-decl", {
-			id: id
-		});
-	}
+    = ':' _ id:TypeId {
+        return mk("type-decl", {
+            id: id
+        });
+    }
 
 TypeId
-	= id:ident _ {
-		return id;
-	}
+    = id:ident _ {
+        return id;
+    }
 
 Block
-	= '{' _ stmts:Statement* '}' _ {
-		return stmts;
-	}
+    = '{' _ stmts:Statement* '}' _ {
+        return stmts;
+    }
 
 //
 // Helpers
 
-_				= [ \t\r\n]*
+_               = [ \t\r\n]*
 
-ident 			= $( ident_start ident_rest* )
-ident_start		= [a-zA-Z_]
-ident_rest		= ident_start / [0-9]
+ident           = $( ident_start ident_rest* )
+ident_start     = [a-zA-Z_]
+ident_rest      = ident_start / [0-9]
 
 //
 // Tokens
 
-ASYNC			= 'async'	!ident_rest
-DEF				= 'def' 	!ident_rest
+ASYNC           = 'async'   !ident_rest
+DEF             = 'def'     !ident_rest
