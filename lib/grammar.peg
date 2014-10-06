@@ -51,18 +51,21 @@ TopLevelStatement
 
 Statement
     = FunctionDefinition
+    / ChannelOpStatement
     / ReturnStatement
     / WhileStatement
+    / SelectStatement
     / ExpressionStatement
 
 
 FunctionDefinition
-    = DEF _ async:ASYNC? _ name:ident _ args:FunctionArgs? retType:TypeDecl body:Block {
+    = DEF _ async:ASYNC? _ name:ident _ args:FunctionArgs? retType:TypeDecl? body:Block {
         return mk("function-def", {
             async       : !!async,
             name        : name,
             args        : args || [],
-            returnType  : retType,
+            // TODO: this should be explicitly void
+            returnType  : retType || null,
             body        : body
         });
     }
@@ -85,6 +88,19 @@ FunctionArg
         });
     }
 
+ChannelOpStatement
+    = target:ident _ op:ChannelOp _ exp:Expression ';' _ {
+        return mk("channel-op", {
+            target: target,
+            op: op,
+            exp: exp
+        });
+    }
+
+ChannelOp
+    = '<-'  { return 'take'; }
+    / '->'  { return 'put'; }
+
 ReturnStatement
     = RETURN _ exp:Expression ';' _ {
         return mk("return", {
@@ -105,6 +121,30 @@ WhileStatement
         });
     }
 
+SelectStatement
+    = SELECT _ '{' _ alts:SelectWhenClause* def:SelectDefaultClause? '}' _ {
+        return mk("select", {
+            alternatives: alts,
+            default: def || null
+        });
+    }
+
+SelectWhenClause
+    = WHEN _ target:ident _ '<-' _ channels:ExpressionList body:Block {
+        return {
+            target      : target,
+            channels    : channels,
+            body        : body
+        };
+    }
+
+SelectDefaultClause
+    = DEFAULT _ body:Block {
+        return {
+            body        : body
+        };
+    }
+
 TypeDecl
     = ':' _ id:TypeId {
         return mk("type-decl", {
@@ -113,18 +153,64 @@ TypeDecl
     }
 
 TypeId
-    = id:ident _ {
-        return id;
+    = ChannelTypeId
+    / id:ident _ {
+        return mk("type", {
+            id: id
+        });
     }
 
+ChannelTypeId = CHAN _ '<' _ id:ident _ '>' _ {
+    return mk("channel", {
+        itemType: id
+    });
+}
+
 Block
-    = '{' _ stmts:Statement* '}' _ {
+    = '{' _ decl:VariableDeclarations? stmts:Statement* '}' _ {
         return stmts;
+    }
+
+VariableDeclarations
+    = VariableDeclaration+
+
+VariableDeclaration
+    = AutoVariableDeclaration
+    / TypedVariableDeclaration
+
+AutoVariableDeclaration
+    = id:ident _ ':' _ def:VariableDefault ';' _ {
+        return mk('var-decl', {
+            name            : id,
+            auto            : true,
+            type            : null,
+            defaultValue    : def
+        });
+    }
+
+TypedVariableDeclaration
+    = id:ident _ type:TypeDecl def:VariableDefault? ';' _ {
+        return mk('var-decl', {
+            name            : id,
+            auto            : false,
+            type            : type,
+            defaultValue    : def || null
+        });
+    }
+
+VariableDefault
+    = '=' _ exp:Expression {
+        return exp;
     }
 
 ExpressionStatement
     = exp:Expression ';' _ {
         return exp;
+    }
+
+ExpressionList
+    = head:Expression tail:(',' _ Expression)* {
+        return list(head, tail, 2);
     }
 
 Expression
@@ -148,7 +234,10 @@ Spawn
     / FunctionCall
 
 FunctionCall
-    = fn:Atom _ '(' _ args:FunctionCallArgs? ')' _ {
+    = type:ChannelTypeId '(' _ ')' _ {
+        return mk('make-channel', type);
+    }
+    / fn:Atom _ '(' _ args:FunctionCallArgs? ')' _ {
         return mk('function-call', {
             fn: fn,
             args: args || []
@@ -200,22 +289,30 @@ integer         = '0'
 
 keyword
     = ASYNC
+    / CHAN
     / DEF
+    / DEFAULT
     / FALSE
     / IF
     / RETURN
+    / SELECT
     / SPAWN
     / TRUE
+    / WHEN
     / WHILE
 
 //
 // Tokens
 
 ASYNC           = 'async'       !ident_rest
+CHAN            = 'chan'        !ident_rest
 DEF             = 'def'         !ident_rest
+DEFAULT         = 'default'     !ident_rest
 FALSE           = 'false'       !ident_rest
 IF              = 'if'          !ident_rest
 RETURN          = 'return'      !ident_rest
+SELECT          = 'select'      !ident_rest
 SPAWN           = 'spawn'       !ident_rest
 TRUE            = 'true'        !ident_rest
+WHEN            = 'when'        !ident_rest
 WHILE           = 'while'       !ident_rest

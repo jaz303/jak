@@ -1,15 +1,23 @@
-def async foo(  a : int, b : int, c : int  ) : int {
-	1 + 2 - 3 + 4;
+def async produce(channel : chan<int>) {
+	while true {
+		delay(random(250, 2000));
+	}
 }
 
-def bar( count : int  ) : float {
-	spawn processInput(1 );
-	
+def async consume(channel : chan<int>, i : int) {
 	while true {
-		print( true, false, true );
+		i <- channel;
+		print(i);
 	}
+}
 
-	
+def main() : void {
 
-	return 20 ;
+	channel := chan<int>();
+
+	spawn produce(channel);
+	spawn consume(channel, 0);
+
+	return 1;
+
 }

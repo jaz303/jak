@@ -2,11 +2,11 @@
 
  - [x] function declarations
  - [x] function calls
- - [ ] make channel
+ - [x] make channel
  - [x] spawn
- - [ ] select
+ - [x] select
  - [x] while loop
- - [ ] add / subtract
+ - [x] add / subtract
  - [x] expressions: integers, booleans
  - [x] return
 
