@@ -1,6 +1,7 @@
 def async produce(channel : chan<int>) {
 	while true {
 		delay(random(250, 2000));
+		random(1, 10) -> channel;
 	}
 }
 

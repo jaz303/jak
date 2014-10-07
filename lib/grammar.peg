@@ -89,11 +89,11 @@ FunctionArg
     }
 
 ChannelOpStatement
-    = target:ident _ op:ChannelOp _ exp:Expression ';' _ {
+    = left:Expression _ op:ChannelOp _ right:Expression ';' _ {
         return mk("channel-op", {
-            target: target,
+            left: left,
             op: op,
-            exp: exp
+            right: right
         });
     }
 
@@ -194,7 +194,7 @@ TypedVariableDeclaration
             name            : id,
             auto            : false,
             type            : type,
-            defaultValue    : def || null
+            defaultValue    : def || void 0
         });
     }
 
