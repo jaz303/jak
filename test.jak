@@ -4,11 +4,15 @@ def async produce(channel : chan<int>) {
 	}
 }
 
-def async consume(channel : chan<int>, i : int) {
+def async consume(channel : chan<int>) {
+
+	i : int ;
+
 	while true {
 		i <- channel;
 		print(i);
 	}
+	
 }
 
 def main() : void {
@@ -16,7 +20,7 @@ def main() : void {
 	channel := chan<int>();
 
 	spawn produce(channel);
-	spawn consume(channel, 0);
+	spawn consume(channel);
 
 	return 1;
 
