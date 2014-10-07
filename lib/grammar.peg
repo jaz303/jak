@@ -168,7 +168,7 @@ ChannelTypeId = CHAN _ '<' _ id:ident _ '>' _ {
 
 Block
     = '{' _ decl:VariableDeclarations? stmts:Statement* '}' _ {
-        return stmts;
+        return (decl || []).concat(stmts);
     }
 
 VariableDeclarations
