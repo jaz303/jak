@@ -1,0 +1,1 @@
+$jak_spawn(function*() { main(); });
