@@ -116,3 +116,20 @@ while (!res.done) { yield res.value; res = gen.next(); }
 // var GeneratorInstance = (function *(){})().constructor
 // foo instanceof GeneratorInstance
 */
+
+//
+// "stdlib"
+
+function random(min, max) {
+    return min + Math.floor(Math.random() * (max - min));
+}
+
+function delay(milliseconds) {
+    return new Promise(function(resolve) {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+function print(message) {
+    console.log(message);
+}
