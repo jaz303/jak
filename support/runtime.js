@@ -98,6 +98,19 @@ function $jak_tick() {
     }
 }
 
+function $jak_functionIsGenerator(fn) {
+    return fn.constructor.name === 'GeneratorFunction';
+}
+
+function $jak_run() {
+    if ($jak_functionIsGenerator(main)) {
+        $jak_spawn(main());
+    } else {
+        $jak_spawn(function*() { main(); });
+    }
+    $jack_tick();
+}
+
 /*
 // if we're calling an async function this is all we need to do.
 // any function that calls an async function must itself be
