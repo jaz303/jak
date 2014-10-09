@@ -144,14 +144,6 @@ function $jak_tick() {
     $jak_tasks.push(task);
     process.nextTick($jak_tick);
 
-    
-    // if the 
-    if (result.done) {
-        // task is complete; no need to re-queue. let it burn.
-        process.nextTick($jak_tick);
-        return;
-    }
-
 }
 
 function $jak_run() {
