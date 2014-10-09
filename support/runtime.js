@@ -77,33 +77,85 @@ $JakChannel.prototype._drain = function() {
 
 var $jak_tasks = [];
 
-function $jak_spawn(generator) {
-    $jak_tasks.push([generator, void 0]);
-}
-
-function $jak_tick() {
-    var task = $jak_tasks.shift();
-    var result = task[0].next(task[1]);
-    if (result.done) {
-        // do nothing; task complete
-    } else if (result.value && typeof result.value.then === 'function') {
-        result.value.then(function(res) {
-            task[1] = true;
-            $jak_tasks.push(task);
-            tick();
-        });
-    } else {
-        $jak_tasks.push(task);
-        process.nextTick(tick);
-    }
-}
-
-function $jak_functionIsGenerator(fn) {
+function $jak_isGenerator(fn) {
     return fn.constructor.name === 'GeneratorFunction';
 }
 
+function $jak_isGeneratorInstance(obj) {
+    return obj.constructor instanceof GeneratorInstance;
+}
+
+function $jak_isPromise(obj) {
+    return obj && (typeof obj.then === 'function');
+}
+
+function $JakTask(gen) {
+    this.stack = [gen];
+    this.memo = void 0;
+}
+
+function $jak_spawn(generator) {
+    var task = new $JakTask(generator);
+    $jak_tasks.push(task);
+    return task;
+}
+
+// TODO: this is sub-optimal; we should have separate wait queue
+// and just cycle the available tasks in while loop, entering
+// nested generators synchronously until a Promise is returned.
+function $jak_tick() {
+
+    var task = $jak_tasks.shift();
+
+    var result = task.stack[task.stack.length-1].next(task.memo);
+
+    if (result.done) {
+        task.stack.pop();
+        if (task.stack.length) {
+            task.memo = result.value;
+            $jak_tasks.push(task);
+        }
+        return;
+    }
+
+    // if we've got a promise, this task is suspended until
+    // the promise is resolved.
+    if ($jak_isPromise(result.value)) {
+        result.value.then(function(res) {
+            task.memo = res;
+            $jak_tasks.push(task);
+            $jak_tick();
+        });
+        return;
+    }
+
+    // if we've got a generator that means the task has invoked
+    // an asynchronous function. push the generator onto the
+    // stack and schedule the next tick
+    if ($jak_isGeneratorInstance(result.value)) {
+        task.stack.push(result.value);
+        task.memo = void 0;
+        process.nextTick($jak_tick);
+        return;
+    }
+
+    // otherwise it's just a value to return to the generator
+    task.memo = result.value; // is this right?
+    $jak_tasks.push(task);
+    process.nextTick($jak_tick);
+
+    
+    // if the 
+    if (result.done) {
+        // task is complete; no need to re-queue. let it burn.
+        process.nextTick($jak_tick);
+        return;
+    }
+
+}
+
 function $jak_run() {
-    if ($jak_functionIsGenerator(main)) {
+    if ($jak_isGenerator(main)) {
         $jak_spawn(main());
     } else {
         $jak_spawn(function*() { main(); });
