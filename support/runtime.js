@@ -2,7 +2,7 @@
 // Channels
 
 function $jak_makeChannel() {
-    return new Channel();
+    return new $JakChannel();
 }
 
 // function select(channels) {
@@ -24,14 +24,6 @@ function $jak_makeChannel() {
 function $JakChannel() {
     this._queue = [];
     this._waiters = [];
-}
-
-$JakChannel.prototype.take = function(state) {
-
-    // ...
-    // same as usual take, except push state as well
-    // drain routine 
-
 }
 
 $JakChannel.prototype.take = function() {
@@ -76,13 +68,20 @@ $JakChannel.prototype._drain = function() {
 // Engine
 
 var $jak_tasks = [];
+var $jak_isScheduled = false;
+
+function $jak_scheduleTick() {
+    if ($jak_isScheduled) return;
+    $jak_isScheduled = true;
+    process.nextTick($jak_tick);
+}
 
 function $jak_isGenerator(fn) {
     return fn.constructor.name === 'GeneratorFunction';
 }
 
 function $jak_isGeneratorInstance(obj) {
-    return obj.constructor instanceof GeneratorInstance;
+    return obj.constructor.name === 'GeneratorFunctionPrototype';
 }
 
 function $jak_isPromise(obj) {
@@ -97,52 +96,40 @@ function $JakTask(gen) {
 function $jak_spawn(generator) {
     var task = new $JakTask(generator);
     $jak_tasks.push(task);
+    $jak_scheduleTick();
     return task;
 }
 
-// TODO: this is sub-optimal; we should have separate wait queue
-// and just cycle the available tasks in while loop, entering
-// nested generators synchronously until a Promise is returned.
 function $jak_tick() {
 
+    $jak_isScheduled = false;
+
     var task = $jak_tasks.shift();
+    if (!task) return;
 
-    var result = task.stack[task.stack.length-1].next(task.memo);
+    var stack = task.stack;
 
-    if (result.done) {
-        task.stack.pop();
-        if (task.stack.length) {
+    while (stack.length) {
+        var result = stack[stack.length-1].next(task.memo);
+        if (result.done) {
+            stack.pop();
             task.memo = result.value;
-            $jak_tasks.push(task);
+        } else if ($jak_isGeneratorInstance(result.value)) {
+            stack.push(result.value);
+            task.memo = void 0;
+        } else if ($jak_isPromise(result.value)) {
+            result.value.then(function(res) {
+                task.memo = res;
+                $jak_tasks.push(task);
+                $jak_scheduleTick();
+            });
+            break;
+        } else {
+            task.memo = result.value;
         }
-        return;
     }
 
-    // if we've got a promise, this task is suspended until
-    // the promise is resolved.
-    if ($jak_isPromise(result.value)) {
-        result.value.then(function(res) {
-            task.memo = res;
-            $jak_tasks.push(task);
-            $jak_tick();
-        });
-        return;
-    }
-
-    // if we've got a generator that means the task has invoked
-    // an asynchronous function. push the generator onto the
-    // stack and schedule the next tick
-    if ($jak_isGeneratorInstance(result.value)) {
-        task.stack.push(result.value);
-        task.memo = void 0;
-        process.nextTick($jak_tick);
-        return;
-    }
-
-    // otherwise it's just a value to return to the generator
-    task.memo = result.value; // is this right?
-    $jak_tasks.push(task);
-    process.nextTick($jak_tick);
+    $jak_scheduleTick();
 
 }
 
@@ -150,29 +137,10 @@ function $jak_run() {
     if ($jak_isGenerator(main)) {
         $jak_spawn(main());
     } else {
-        $jak_spawn(function*() { main(); });
+        $jak_spawn((function*() { main(); })());
     }
-    $jack_tick();
+    $jak_scheduleTick();
 }
-
-/*
-// if we're calling an async function this is all we need to do.
-// any function that calls an async function must itself be
-// async.
-var gen = doWork(id, item);
-var res = gen.next();
-while (!res.done) { yield res.value; res = gen.next(); }
-
-// alternative to the above:
-// yield the generator itself back to the scheduler
-// scheduler checks for a generator, if it finds one it adds it
-// to this task's generator stack and begins to cycle it.
-// yield doWork(id, item)
-//
-// how to detect a generator:
-// var GeneratorInstance = (function *(){})().constructor
-// foo instanceof GeneratorInstance
-*/
 
 //
 // "stdlib"
@@ -190,3 +158,7 @@ function delay(milliseconds) {
 function print(message) {
     console.log(message);
 }
+
+//
+// BEGIN USERCODE
+
