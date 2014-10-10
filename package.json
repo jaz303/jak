@@ -1,7 +1,7 @@
 {
   "name": "jak",
   "version": "0.0.0",
-  "description": "",
+  "description": "Programming language with CSP/Go-style concurrency. Alpha quality.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,5 +18,12 @@
   "homepage": "https://github.com/jaz303/jak",
   "dependencies": {
     "pegjs": "^0.8.0"
-  }
+  },
+  "devDependencies": {},
+  "keywords": [
+    "language",
+    "csp",
+    "channel",
+    "async"
+  ]
 }
