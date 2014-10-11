@@ -24,10 +24,9 @@
                     right   : i[i2]
                 });
             } else {
-                result = mk('binary-operator', {
-                    op      : i[0],
-                    left    : result,
-                    right   : i[2]
+                result = mk('function-call', {
+                    fn      : mk('ident', { name: i[0] }),
+                    args    : [result, i[2]]
                 });
             }
         });

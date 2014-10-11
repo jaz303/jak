@@ -23,6 +23,8 @@ def main() : void {
 	spawn produce(channel);
 	spawn consume(channel);
 
+	print(100 + 20 - 50);
+
 	return 1;
 
 }

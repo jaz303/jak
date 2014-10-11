@@ -143,6 +143,17 @@ function $jak_run() {
 }
 
 //
+// Operators
+
+function $jak_binop_int_plus_int(left, right) {
+    return left + right;
+}
+
+function $jak_binop_int_minus_int(left, right) {
+    return left - right;
+}
+
+//
 // "stdlib"
 
 function random(min, max) {
